@@ -112,3 +112,232 @@ avgofRatings = foreach prod2DataAll generate AVG(prod2Data.overall);
 
 
 
+PIG Queries
+****************************************************************case2: Comparing multiple products(timewise)
+****************************************************************
+
+1. B00001WRSJ Sony MDRV6
+2. B00004T8R2 Panasonic RP-HT21
+3. B003CJTR82 Philips SHS3200BK
+4. B003EM8008 Panasonic RPHJE120K
+
+
+reviews = load '/output/hiveReports/amazonReviews/elctronicProductsExternal/external' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:long); 
+
+....................Coverting unixTime to date:
+-- reviews = load '/output/prod2Data' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:long);
+-- result = foreach reviews GENERATE ToDate(unixReviewTime*1000) as yr, overall as ratings;
+
+-- result = foreach reviews GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+-- truncated = FOREACH result GENERATE GetYear(yr) AS year;
+-- timewise = group result by yr;
+-- timewiseStarCounts = foreach timewise generate group as year, COUNT(result);
+
+reviews = load '/output/hiveReports/amazonReviews/elctronicProductsExternal/external' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:long);
+prod1Data = FILTER reviews by asin == 'B00001WRSJ';
+result = foreach prod1Data GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+timewise = group result by yr;
+timewiseStarCounts = foreach timewise generate group as year, COUNT(result);
+
+OUTPUT:
+
+(2004,2)
+(2006,10)
+(2008,20)
+(2010,20)
+(2012,79)
+
+
+avgofRatings = foreach timewise generate group as year, AVG(result.ratings);
+
+OUTPUT:
+
+(2004,4.5)
+(2006,4.5)
+(2008,4.6)
+(2010,4.65)
+(2012,4.708860759493671)
+
+reviews = load '/output/hiveReports/amazonReviews/elctronicProductsExternal/external' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:long);
+prod2Data = FILTER reviews by asin == 'B00004T8R2';
+result = foreach prod2Data GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+timewise = group result by yr;
+timewiseStarCounts = foreach timewise generate group as year, COUNT(result);
+
+OUTPUT:
+
+(2006,2)
+(2008,11)
+(2010,45)
+(2012,123)
+(2014,113)
+
+prod2Data = FILTER reviews by asin == 'B00004T8R2';
+result = foreach prod2Data GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+timewise = group result by yr;
+avgofRatings = foreach timewise generate group as year, AVG(result.ratings);
+
+OUTPUT:snip:14
+
+(2006,4.5)
+(2008,4.545454545454546)
+(2010,4.466666666666667)
+
+
+
+reviews = load '/output/hiveReports/amazonReviews/elctronicProductsExternal/external' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:long);
+prod3Data = FILTER reviews by asin == 'B003CJTR82';
+result = foreach prod3Data GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+timewise = group result by yr;
+timewiseStarCounts = foreach timewise generate group as year, COUNT(result);
+
+OUTPUT
+
+(2006,3)
+(2008,15)
+(2010,16)
+(2012,64)
+
+
+prod3Data = FILTER reviews by asin == 'B003CJTR82';
+result = foreach prod3Data GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+timewise = group result by yr;
+avgofRatings = foreach timewise generate group as year, AVG(result.ratings);
+
+OUTPUT:15
+
+(2006,4.0)
+(2008,3.2666666666666666)
+(2010,3.6875)
+(2012,3.796875)
+(2014,4.145833333333333)
+(2007,3.642857142857143)
+
+reviews = load '/output/hiveReports/amazonReviews/elctronicProductsExternal/external' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:long);
+prod4Data = FILTER reviews by asin == 'B003EM8008';
+result = foreach prod4Data GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+timewise = group result by yr;
+timewiseStarCounts = foreach timewise generate group as year, COUNT(result);
+
+OUTPUT:
+
+(2010,1)
+(2012,11)
+(2014,4)
+(2011,2)
+(2013,18)
+
+prod4Data = FILTER reviews by asin == 'B003EM8008';
+result = foreach prod4Data GENERATE GetYear(ToDate(unixReviewTime*1000)) as yr, overall as ratings;
+timewise = group result by yr;
+avgofRatings = foreach timewise generate group as year, AVG(result.ratings);
+
+OUTPUT:16
+
+(2010,1.0)
+(2012,4.181818181818182)
+(2014,4.5)
+
+**************************************************************
+Case:-3 Analyzing multiple categories:(CSV Data)
+****************************************************************
+1.	ELECTRONICS.csv Dataset
+
+electronics = load '/home/Msc/project/data/nidhi/data/csvdata/ratings_Electronics.csv' using PigStorage(',') as(reviewerID: chararray, asin: chararray, stars: int, unixreviewtime: long);
+
+electronicsData = foreach electronics generate reviewerID as reviewerid, asin as asin, stars;
+groupedData = group electronicsData by stars;
+electronicStarsCounts = foreach groupedData generate 'Electronic Products' as electronicsProducts, group as stars, COUNT(electronicsData) as totalStarsCounts;
+
+OUTPUT:
+
+(Electronic Products,1,901765)
+(Electronic Products,2,456322)
+
+store electronicStarsCounts into '/home/Msc/project/data/nidhi/op1/electronicStarsCounts' using PigStorage(',');
+
+2.	CELL Phones.CSV Dataset
+cellPhones = load '/home/Msc/project/data/nidhi/data/csvdata/ratings_Cell_Phones_and_Accessories.csv' using PigStorage(',') as(reviewerID: chararray, asin: chararray, stars: int, unixreviewtime: long);
+
+cellPhonesData = foreach cellPhones generate reviewerID as reviewerid, asin as asin, stars;
+groupedData = group cellPhonesData by stars;
+cellPhonestarsCounts = foreach groupedData generate 'cellPhone Products' as cellPhonesProducts, group as stars, COUNT(cellPhonesData) as totalStarsCounts;
+
+
+store cellPhonestarsCounts into '/home/Msc/project/data/nidhi/op1/cellPhonestarsCounts' using PigStorage(',');
+
+3.	BOOK .CSV Dataset
+
+books = load '/home/Msc/project/data/nidhi/data/csvdata/ratings_Books.csv' using PigStorage(',') as(reviewerID: chararray, asin: chararray, stars: int, unixreviewtime: long);
+
+booksData = foreach books generate reviewerID as reviewerid, asin as asin, stars;
+groupedData = group booksData by stars;
+bookstarsCounts = foreach groupedData generate 'Books' as booksProducts, group as stars, COUNT(booksData) as totalStarsCounts;
+
+
+store bookstarsCounts into '/home/Msc/project/data/nidhi/op1/bookstarsCounts' using PigStorage(',');
+
+
+4.	DIGITAL Music.csv Dataset
+
+Digital_Music = load '/home/Msc/project/data/nidhi/data/csvdata/ratings_Digital_Music.csv' using PigStorage(',') as(reviewerID: chararray, asin: chararray, stars: int, unixreviewtime: long);
+
+Digital_MusicData = foreach Digital_Music generate reviewerID as reviewerid, asin as asin, stars;
+groupedData = group Digital_MusicData by stars;
+Digital_MusictarsCounts = foreach groupedData generate 'Digital_Music' as Digital_MusicProducts, group as stars, COUNT(Digital_MusicData) as totalStarsCounts;
+
+
+store Digital_MusictarsCounts into '/home/Msc/project/data/nidhi/op1/Digital_MusictarsCounts' using PigStorage(',');
+
+5.	MOVIES.csv Dataset
+
+movies = load '/home/Msc/project/data/nidhi/data/csvdata/ratings_Movies_and_TV.csv' using PigStorage(',') as(reviewerID: chararray, asin: chararray, stars: int, unixreviewtime: long);
+
+moviesData = foreach movies generate reviewerID as reviewerid, asin as asin, stars;
+groupedData = group moviesData by stars;
+moviestarsCounts = foreach groupedData generate 'Movies' as moviesProducts, group as stars, COUNT(moviesData) as totalStarsCounts;
+
+
+store moviestarsCounts into '/home/Msc/project/data/nidhi/op1/moviestarsCounts' using PigStorage(',');
+
+
+********Average rating of total stars for allcategories*****************
+
+awk '{print > "AllCategoryData.merged"}' /home/Msc/project/data/nidhi/op1/bookstarsCounts/part-r-00000 /home/Msc/project/data/nidhi/op1/cellPhonestarsCounts/part-r-00000 /home/Msc/project/data/nidhi/op1/Digital_MusictarsCounts/part-r-00000 /home/Msc/project/data/nidhi/op1/electronicStarsCounts/part-r-00000 /home/Msc/project/data/nidhi/op1/moviestarsCounts/part-r-00000
+
+allProdData = load '/home/Msc/project/data/nidhi/op1/AllCategoryData.merged' using PigStorage(',') as (ProductCategory: chararray, stars: int, noOfStars: long);
+groupedData = group allProdData by ProductCategory;
+productWiseAvgRatings = foreach groupedData generate group, AVG(allProdData.noOfStars) as avgofRatings;
+store productWiseAvgRatings into '/home/Msc/project/data/nidhi/op1/productWiseAvgRatings' using PigStorage(',');
+
+
+*************************************************************
+Case:-4 Rating wise distribution of allProdData for user-histogram
+*************************************************************
+allProdData = load '/home/Msc/project/data/nidhi/op1/AllCategoryData.merged' using PigStorage(',') as (ProductCategory: chararray, stars: int, noOfStars: long);
+groupedData = group allProdData by stars;
+
+starsWiseSum = foreach groupedData generate group, SUM(allProdData.noOfStars) as totalRatings;
+store starsWiseSum into '/home/Msc/project/data/nidhi/op1/starsWiseSum' using PigStorage(',');
+
+
+all products average:
+
+allProdData = load '/home/Msc/project/data/nidhi/op1/AllCategoryData.merged' using PigStorage(',') as (ProductCategory: chararray, stars: int, noOfStars: long);
+grouped = group allProdData all;
+prodAVG = foreach grouped generate AVG(allProdData.noOfStars);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
