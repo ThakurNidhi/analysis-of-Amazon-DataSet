@@ -1,0 +1,114 @@
+/*Create database in Hive*/
+Starthiveby running Hive command in terminal
+Create database amazondb;
+Show databases;
+
+
+/*To Create tables for the BeautyProductsin amazondb  */ 
+create table amazondb.beautyProducts(
+reviewerID string,
+asin string,
+reviewerName string,
+helpful array<int>,
+reviewText string,
+overall double,
+summary string,
+unixReviewTime string,
+reviewTime string
+	)ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe';
+
+
+
+? To load Data into table
+
+load data local inpath '/home/Msc/project/data/nidhi/Beauty_5.json' overwrite into table amazondb.beautyProducts;
+
+
+
+?To Create External table 
+create external table amazondb.beautyProductsExternal(
+asin string, reviewerid string, reviewername string, reviewtext string, summary string, overall double, unixReviewTime string
+)row format delimited
+fields terminated by '|'
+stored as textfile
+location '/output/hiveReports/amazonReviews/beautyProducts/external';
+
+
+
+? To load data into External table 
+insert into table amazondb.beautyProductsExternal select asin, reviewerid, reviewername, reviewtext, summary, overall, unixReviewTime from amazondb.beautyProducts;
+
+/* Create table for Electronic Product */
+
+create table amazondb.elctronicProducts(
+reviewerID string,
+asin string,
+reviewerName string,
+helpful array<int>,
+reviewText string,
+overall double,
+summary string,
+unixReviewTime string,
+reviewTime string
+)ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe';
+
+?	To load data into Electronic Product table
+
+load data local inpath '/home/Msc/project/data/nidhi/data/080417/reviews_Electronics_5.json.gz' overwrite into table amazondb.elctronicProducts;
+
+?	To create External table
+
+create external table amazondb.elctronicProductsExternal(asin string, reviewerid string, reviewername string, reviewtext string, summary string, overall double, unixReviewTime string
+)row format delimited
+fields terminated by '|'
+stored as textfile
+location '/output/hiveReports/amazonReviews/elctronicProductsExternal/external';
+	
+insert into table amazondb.elctronicProductsExternal select asin, reviewerid, reviewername, reviewtext, summary, overall, unixReviewTime from amazondb.elctronicProducts;
+
+********************************************************************
+Case:1  Comparing two products Of Beauty data set 
+********************************************************************
+Comparing two leading products:
+Comparing Dove Men+Care 2 in 1 Shampoo and Conditioner with Clear Scalp and Men Hair Shampoo and Conditioner
+prod1 = Dove Men+Care 2 in 1 Shampoo and Conditioner
+prod2 = Clear Scalp and Hair Men Shampoo and Conditioner
+
+reviews = load '/output/hiveReports/amazonReviews/beautyProducts/external' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:chararray); 
+
+Product one:
+prod1Data = FILTER reviews by asin == 'B00AE07CTI';
+alternative query:
+-- prod1Data = FILTER reviews BY (asin matches '.*B00AE07CTI.*')
+groupedData = group prod1Data by overall;
+starcounts = foreach groupedData generate group as overall, COUNT(prod1Data) as count; 
+asin string, reviewerid string, reviewername string, reviewtext string, summary string, overall double, unixReviewTime string
+)row format delimited
+fields terminated by '|'
+stored as textfile
+location '/output/hiveReports/amazonReviews/elctronicProductsExternal/external';
+	
+insert into table amazondb.elctronicProductsExternal select asin, reviewerid, reviewername, reviewtext, summary, overall, unixReviewTime from amazondb.elctronicProducts;
+
+********************************************************************
+Case:1  Comparing two products Of Beauty data set 
+********************************************************************
+Comparing two leading products:
+Comparing Dove Men+Care 2 in 1 Shampoo and Conditioner with Clear Scalp and Men Hair Shampoo and Conditioner
+prod1 = Dove Men+Care 2 in 1 Shampoo and Conditioner
+prod2 = Clear Scalp and Hair Men Shampoo and Conditioner
+
+reviews = load '/output/hiveReports/amazonReviews/beautyProducts/external' using PigStorage('|') as(asin:chararray, reviewerid: chararray, reviewername:chararray, reviewtext:chararray, summary:chararray, overall:double, unixReviewTime:chararray); 
+
+Product one:
+prod1Data = FILTER reviews by asin == 'B00AE07CTI';
+alternative query:
+-- prod1Data = FILTER reviews BY (asin matches '.*B00AE07CTI.*')
+groupedData = group prod1Data by overall;
+starcounts = foreach groupedData generate group as overall, COUNT(prod1Data) as count; 
+
+prod2DataAll = group prod2Data All;
+avgofRatings = foreach prod2DataAll generate AVG(prod2Data.overall);
+
+
+
